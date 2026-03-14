@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI智能选股系统 - AlphaStock AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+        
+        body {
+            font-family: 'Inter', 'Noto Sans SC', sans-serif;
+            background: #0a0e1a;
+            color: #e2e8f0;
+        }
+        
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .glow-effect {
+            box-shadow: 0 0 20px rgba(96, 165, 250, 0.3);
+        }
+        
+        .stock-card {
+            transition: all 0.3s ease;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+        
+        .stock-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(96, 165, 250, 0.5);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .animate-pulse-slow {
+            animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .ai-thinking {
+            background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+            background-size: 200% 100%;
+            animation: loading 2s infinite;
+        }
+        
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        .metric-badge {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+        
+        .positive { color: #34d399; }
+        .negative { color: #f87171; }
+        
+        input[type="range"] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #60a5fa;
+            cursor: pointer;
+            margin-top: -6px;
+        }
+        
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            background: #334155;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body class="min-h-screen overflow-x-hidden">
+
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 glass-panel border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-brain text-white text-sm"></i>
+                    </div>
+                    <span class="text-xl font-bold gradient-text">AlphaStock AI</span>
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#" class="text-slate-300 hover:text-white transition">实时行情</a>
+                    <a href="#" class="text-slate-300 hover:text-white transition">AI选股</a>
+                    <a href="#" class="text-slate-300 hover:text-white transition">策略回测</a>
+                    <a href="#" class="text-slate-300 hover:text-white transition">投资组合</a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button class="px-4 py-2 text-sm text-slate-300 hover:text-white transition">登录</button>
+                    <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition glow-effect">
+                        免费试用
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="pt-20 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        
+        <!-- Hero Section -->
+        <div class="text-center mb-12 animate-fade-in">
+            <div class="inline-flex items-center px-4 py-2 rounded-full bg-slate-800/50 border border-slate-700 mb-6">
+                <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse mr-2"></span>
+                <span class="text-sm text-slate-300">AI引擎正在实时分析 4,832 只股票</span>
+            </div>
+            <h1 class="text-4xl md:text-6xl font-bold mb-4">
+                <span class="gradient-text">智能量化选股</span>
+                <br>
+                <span class="text-slate-100">让AI发现下一个机会</span>
+            </h1>
+            <p class="text-slate-400 text-lg max-w-2xl mx-auto mb-8">
+                基于深度学习算法，实时分析市场数据、财务指标和情绪信号，为您筛选出最具潜力的投资标的
+            </p>
+        </div>
+
+        <!-- AI Control Panel -->
+        <div class="glass-panel rounded-2xl p-6 mb-8 border border-slate-700/50">
+            <div class="flex flex-col lg:flex-row gap-6">
+                <!-- Strategy Selection -->
+                <div class="lg:w-1/4 space-y-4">
+                    <h3 class="text-lg font-semibold text-slate-200 mb-4">
+                        <i class="fas fa-robot mr-2 text-blue-400"></i>AI策略选择
+                    </h3>
+                    <div class="space-y-2">
+                        <button onclick="setStrategy('growth')" class="strategy-btn w-full text-left px-4 py-3 rounded-xl bg-blue-600/20 border border-blue-500/50 text-blue-300 hover:bg-blue-600/30 transition flex items-center justify-between group active" data-strategy="growth">
+                            <span><i class="fas fa-rocket mr-2"></i>成长股挖掘</span>
+                            <i class="fas fa-chevron-right opacity-0 group-hover:opacity-100 transition"></i>
+                        </button>
+                        <button onclick="setStrategy('value')" class="strategy-btn w-full text-left px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700 text-slate-400 hover:bg-slate-700/50 transition flex items-center justify-between group" data-strategy="value">
+                            <span><i class="fas fa-gem mr-2"></i>价值洼地</span>
+                            <i class="fas fa-chevron-right opacity-0 group-hover:opacity-100 transition"></i>
+                        </button>
+                        <button onclick="setStrategy('momentum')" class="strategy-btn w-full text-left px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700 text-slate-400 hover:bg-slate-700/50 transition flex items-center justify-between group" data-strategy="momentum">
+                            <span><i class="fas fa-chart-line mr-2"></i>动量突破</span>
+                            <i class="fas fa-chevron-right opacity-0 group-hover:opacity-100 transition"></i>
+                        </button>
+                        <button onclick="setStrategy('dividend')" class="strategy-btn w-full text-left px-4 py-3 rounded-xl bg-slate-800/50 border border-slate-700 text-slate-400 hover:bg-slate-700/50 transition flex items-center justify-between group" data-strategy="dividend">
+                            <span><i class="fas fa-hand-holding-usd mr-2"></i>高分红策略</span>
+                            <i class="fas fa-chevron-right opacity-0 group-hover:opacity-100 transition"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="lg:w-2/4 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-2">市值范围 (亿元)</label>
+                        <div class="flex items-center space-x-2 mb-2">
+                            <input type="number" id="minCap" value="50" class="w-20 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm focus:outline-none focus:border-blue-500">
+                            <span class="text-slate-500">-</span>
+                            <input type="number" id="maxCap" value="5000" class="w-20 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm focus:outline-none focus:border-blue-500">
+                        </div>
+                        <input type="range" class="w-full" min="0" max="10000" value="2500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-2">AI评分阈值</label>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-2xl font-bold text-blue-400" id="scoreThreshold">85</span>
+                            <span class="text-xs text-slate-500">仅显示高分股票</span>
+                        </div>
+                        <input type="range" id="scoreRange" class="w-full" min="60" max="100" value="85" oninput="updateScoreDisplay(this.value)">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-2">行业筛选</label>
+                        <select id="sectorFilter" class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm focus:outline-none focus:border-blue-500 text-slate-300">
+                            <option value="all">全部行业</option>
+                            <option value="tech">科技/半导体</option>
+                            <option value="finance">金融/银行</option>
+                            <option value="healthcare">医药/医疗</option>
+                            <option value="energy">新能源/电力</option>
+                            <option value="consumer">消费/零售</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-400 mb-2">技术指标</label>
+                        <div class="flex flex-wrap gap-2">
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" checked class="rounded bg-slate-800 border-slate-600 text-blue-600 focus:ring-blue-500">
+                                <span class="text-sm text-slate-300">MACD金叉</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" class="rounded bg-slate-800 border-slate-600 text-blue-600 focus:ring-blue-500">
+                                <span class="text-sm text-slate-300">突破均线</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" checked class="rounded bg-slate-800 border-slate-600 text-blue-600 focus:ring-blue-500">
+                                <span class="text-sm text-slate-300">放量上涨</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <div class="lg:w-1/4 flex flex-col justify-center">
+                    <button onclick="runAIScreening()" class="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl font-semibold text-lg transition transform hover:scale-105 glow-effect flex items-center justify-center space-x-2 group">
+                        <i class="fas fa-magic group-hover:animate-spin"></i>
+                        <span>开始AI选股</span>
+                    </button>
+                    <p class="text-xs text-slate-500 text-center mt-3">
+                        <i class="fas fa-clock mr-1"></i>预计分析时间: 2-3秒
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading State (Hidden by default) -->
+        <div id="loadingState" class="hidden mb-8">
+            <div class="glass-panel rounded-2xl p-8 text-center">
+                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-500/20 flex items-center justify-center animate-pulse">
+                    <i class="fas fa-brain text-2xl text-blue-400"></i>
+                </div>
+                <h3 class="text-xl font-semibold mb-2">AI正在深度分析市场数据...</h3>
+                <div class="max-w-md mx-auto space-y-2">
+                    <div class="h-2 bg-slate-800 rounded-full overflow-hidden">
+                        <div class="h-full bg-blue-500 rounded-full animate-pulse-slow" style="width: 75%"></div>
+                    </div>
+                    <div class="flex justify-between text-xs text-slate-500">
+                        <span>数据清洗</span>
+                        <span>财务建模</span>
+                        <span>技术形态识别</span>
+                        <span>生成报告</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Stock List -->
+            <div class="lg:col-span-2 space-y-4" id="stockList">
+                <!-- Stock cards will be injected here -->
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Market Overview -->
+                <div class="glass-panel rounded-2xl p-6">
+                    <h3 class="text-lg font-semibold mb-4 flex items-center">
+                        <i class="fas fa-chart-pie mr-2 text-purple-400"></i>市场热度
+                    </h3>
+                    <canvas id="sectorChart" height="200"></canvas>
+                </div>
+
+                <!-- AI Insights -->
+                <div class="glass-panel rounded-2xl p-6">
+                    <h3 class="text-lg font-semibold mb-4 flex items-center">
+                        <i class="fas fa-lightbulb mr-2 text-yellow-400"></i>AI洞察
+                    </h3>
+                    <div class="space-y-4" id="aiInsights">
+                        <div class="p-3 bg-slate-800/50 rounded-lg border-l-2 border-blue-500">
+                            <p class="text-sm text-slate-300">科技板块近期资金流入明显，建议关注AI应用层标的</p>
+                            <span class="text-xs text-slate-500 mt-1 block">2分钟前更新</span>
+                        </div>
+                        <div class="p-3 bg-slate-800/50 rounded-lg border-l-2 border-green-500">
+                            <p class="text-sm text-slate-300">检测到3只成长股突破年线，技术面呈现多头排列</p>
+                            <span class="text-xs text-slate-500 mt-1 block">5分钟前更新</span>
+                        </div>
+                        <div class="p-3 bg-slate-800/50 rounded-lg border-l-2 border-purple-500">
+                            <p class="text-sm text-slate-300">北向资金今日净流入42亿，重点加仓新能源赛道</p>
+                            <span class="text-xs text-slate-500 mt-1 block">12分钟前更新</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Risk Alert -->
+                <div class="glass-panel rounded-2xl p-6 border border-red-500/20">
+                    <h3 class="text-lg font-semibold mb-3 flex items-center text-red-400">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>风险提示
+                    </h3>
+                    <ul class="space-y-2 text-sm text-slate-400">
+                        <li class="flex items-start">
+                            <i class="fas fa-dot-circle text-xs mt-1.5 mr-2 text-red-500"></i>
+                            <span>市场波动率处于近期高位 (VIX: 24.5)</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-dot-circle text-xs mt-1.5 mr-2 text-yellow-500"></i>
+                            <span>美联储利率决议将于本周四公布</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Stock Detail Modal -->
+    <div id="stockModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-slate-900/90 backdrop-blur-sm transition-opacity" aria-hidden="true" onclick="closeModal()"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-bottom glass-panel rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full border border-slate-700">
+                <div class="p-6" id="modalContent">
+                    <!-- Dynamic content -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mock Data
+        const stockData = [
+            { code: '300750', name: '宁德时代', sector: '新能源', price: 198.50, change: 3.25, marketCap: '8,942亿', pe: 28.5, pb: 5.2, score: 94, aiTag: '强烈推荐', volume: '放量', trend: [180, 185, 182, 190, 195, 198] },
+            { code: '002594', name: '比亚迪', sector: '汽车', price: 268.80, change: 2.18, marketCap: '7,821亿', pe: 32.1, pb: 6.8, score: 91, aiTag: '买入', volume: '正常', trend: [250, 255, 260, 258, 265, 268] },
+            { code: '600519', name: '贵州茅台', sector: '消费', price: 1,725.00, change: -0.45, marketCap: '2.1万亿', pe: 35.2, pb: 9.1, score: 88, aiTag: '持有', volume: '缩量', trend: [1750, 1740, 1730, 1720, 1728, 1725] },
+            { code: '000858', name: '五粮液', sector: '消费', price: 158.60, change: 1.85, marketCap: '6,156亿', pe: 25.8, pb: 6.2, score: 87, aiTag: '买入', volume: '放量', trend: [150, 152, 155, 153, 156, 158] },
+            { code: '300760', name: '迈瑞医疗', sector: '医药', price: 298.00, change: 4.12, marketCap: '3,612亿', pe: 42.3, pb: 12.5, score: 86, aiTag: '关注', volume: '放量', trend: [280, 285, 282, 290, 295, 298] },
+            { code: '002371', name: '北方华创', sector: '科技', price: 285.50, change: 5.68, marketCap: '1,508亿', pe: 65.2, pb: 8.9, score: 92, aiTag: '强烈推荐', volume: '巨量', trend: [260, 270, 265, 275, 280, 285] },
+            { code: '300014', name: '亿纬锂能', sector: '新能源', price: 78.90, change: -1.25, marketCap: '1,612亿', pe: 35.6, pb: 4.2, score: 82, aiTag: '观望', volume: '正常', trend: [82, 80, 79, 78, 79, 78] },
+            { code: '600036', name: '招商银行', sector: '金融', price: 32.50, change: 0.85, marketCap: '8,200亿', pe: 6.2, pb: 0.9, score: 85, aiTag: '买入', volume: '正常', trend: [31.5, 31.8, 32.0, 32.2, 32.3, 32.5] }
+        ];
+
+        let currentStrategy = 'growth';
+        let filteredStocks = [...stockData];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            renderStocks();
+            initChart();
+        });
+
+        function setStrategy(strategy) {
+            currentStrategy = strategy;
+            document.querySelectorAll('.strategy-btn').forEach(btn => {
+                if(btn.dataset.strategy === strategy) {
+                    btn.classList.remove('bg-slate-800/50', 'border-slate-700', 'text-slate-400');
+                    btn.classList.add('bg-blue-600/20', 'border-blue-500/50', 'text-blue-300', 'active');
+                } else {
+                    btn.classList.add('bg-slate-800/50', 'border-slate-700', 'text-slate-400');
+                    btn.classList.remove('bg-blue-600/20', 'border-blue-500/50', 'text-blue-300', 'active');
+                }
+            });
+        }
+
+        function updateScoreDisplay(value) {
+            document.getElementById('scoreThreshold').textContent = value;
+        }
+
+        function runAIScreening() {
+            const loadingState = document.getElementById('loadingState');
+            const stockList = document.getElementById('stockList');
+            
+            loadingState.classList.remove('hidden');
+            stockList.style.opacity = '0.5';
+            
+            // Simulate AI processing
+            setTimeout(() => {
+                loadingState.classList.add('hidden');
+                stockList.style.opacity = '1';
+                
+                // Filter logic based on strategy
+                const threshold = parseInt(document.getElementById('scoreRange').value);
+                const sector = document.getElementById('sectorFilter').value;
+                
+                filteredStocks = stockData.filter(stock => {
+                    if(stock.score < threshold) return false;
+                    if(sector !== 'all' && !matchSector(stock.sector, sector)) return false;
+                    return true;
+                });
+                
+                // Sort based on strategy
+                if(currentStrategy === 'growth') {
+                    filteredStocks.sort((a, b) => b.change - a.change);
+                } else if(currentStrategy === 'value') {
+                    filteredStocks.sort((a, b) => a.pe - b.pe);
+                } else if(currentStrategy === 'momentum') {
+                    filteredStocks.sort((a, b) => b.score - a.score);
+                }
+                
+                renderStocks();
+                
+                // Show notification
+                showNotification(`AI筛选完成，找到 ${filteredStocks.length} 只符合条件的股票`);
+            }, 2000);
+        }
+
+        function matchSector(stockSector, filterSector) {
+            const map = {
+                'tech': ['科技', '半导体'],
+                'finance': ['金融', '银行'],
+                'healthcare': ['医药', '医疗'],
+                'energy': ['新能源', '电力'],
+                'consumer': ['消费', '零售']
+            };
+            return map[filterSector]?.some(s => stockSector.includes(s)) || false;
+        }
+
+        function renderStocks() {
+            const container = document.getElementById('stockList');
+            
+            if(filteredStocks.length === 0) {
+                container.innerHTML = `
+                    <div class="glass-panel rounded-2xl p-12 text-center">
+                        <i class="fas fa-search text-4xl text-slate-600 mb-4"></i>
+                        <p class="text-slate-400">未找到符合条件的股票，请调整筛选条件</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = filteredStocks.map((stock, index) => `
+                <div class="stock-card glass-panel rounded-xl p-6 cursor-pointer" onclick="showStockDetail('${stock.code}')" style="animation: fadeIn 0.5s ease-out ${index * 0.1}s both;">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center text-lg font-bold text-slate-300">
+                                ${stock.name[0]}
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-100">${stock.name}</h3>
+                                <p class="text-sm text-slate-500">${stock.code} · ${stock.sector}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold ${stock.change >= 0 ? 'positive' : 'negative'}">
+                                ¥${stock.price.toFixed(2)}
+                            </div>
+                            <div class="text-sm ${stock.change >= 0 ? 'positive' : 'negative'}">
+                                <i class="fas fa-caret-${stock.change >= 0 ? 'up' : 'down'}"></i>
+                                ${stock.change > 0 ? '+' : ''}${stock.change}%
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-4 gap-4 mb-4">
+                        <div class="metric-badge rounded-lg p-2 text-center">
+                            <div class="text-xs text-slate-500 mb-1">市值</div>
+                            <div class="text-sm font-semibold text-slate-300">${stock.marketCap}</div>
+                        </div>
+                        <div class="metric-badge rounded-lg p-2 text-center">
+                            <div class="text-xs text-slate-500 mb-1">PE</div>
+                            <div class="text-sm font-semibold text-slate-300">${stock.pe}</div>
+                        </div>
+                        <div class="metric-badge rounded-lg p-2 text-center">
+                            <div class="text-xs text-slate-500 mb-1">PB</div>
+                            <div class="text-sm font-semibold text-slate-300">${stock.pb}</div>
+                        </div>
+                        <div class="metric-badge rounded-lg p-2 text-center">
+                            <div class="text-xs text-slate-500 mb-1">成交量</div>
+                            <div class="text-sm font-semibold ${stock.volume === '巨量' ? 'text-red-400' : 'text-slate-300'}">${stock.volume}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <span class="px-3 py-1 rounded-full text-xs font-medium ${getScoreColor(stock.score)} bg-opacity-20">
+                                AI评分: ${stock.score}
+                            </span>
+                            <span class="px-3 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                                ${stock.aiTag}
+                            </span>
+                        </div>
+                        <div class="flex space-x-1 h-8 items-end">
+                            ${stock.trend.map((price, i) => {
+                                const height = ((price - Math.min(...stock.trend)) / (Math.max(...stock.trend) - Math.min(...stock.trend)) * 100) || 50;
+                                return `<div class="w-1.5 bg-blue-500/60 rounded-t" style="height: ${Math.max(20, height)}%"></div>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getScoreColor(score) {
+            if(score >= 90) return 'bg-green-500 text-green-400';
+            if(score >= 80) return 'bg-blue-500 text-blue-400';
+            return 'bg-yellow-500 text-yellow-400';
+        }
+
+        function showStockDetail(code) {
+            const stock = stockData.find(s => s.code === code);
+            if(!stock) return;
+            
+            const modal = document.getElementById('stockModal');
+            const content = document.getElementById('modalContent');
+            
+            content.innerHTML = `
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <h2 class="text-3xl font-bold text-slate-100 mb-1">${stock.name}</h2>
+                        <p class="text-slate-400">${stock.code} | ${stock.sector}</p>
+                    </div>
+                    <button onclick="closeModal()" class="text-slate-400 hover:text-white transition">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div class="glass-panel rounded-xl p-4 text-center">
+                        <div class="text-sm text-slate-500 mb-1">当前价格</div>
+                        <div class="text-3xl font-bold ${stock.change >= 0 ? 'positive' : 'negative'}">¥${stock.price}</div>
+                        <div class="text-sm ${stock.change >= 0 ? 'positive' : 'negative'} mt-1">
+                            ${stock.change > 0 ? '+' : ''}${stock.change}%
+                        </div>
+                    </div>
+                    <div class="glass-panel rounded-xl p-4 text-center">
+                        <div class="text-sm text-slate-500 mb-1">AI综合评分</div>
+                        <div class="text-3xl font-bold text-blue-400">${stock.score}</div>
+                        <div class="text-sm text-slate-400 mt-1">跑赢市场概率 78%</div>
+                    </div>
+                    <div class="glass-panel rounded-xl p-4 text-center">
+                        <div class="text-sm text-slate-500 mb-1">机构目标价</div>
+                        <div class="text-3xl font-bold text-purple-400">¥${(stock.price * 1.15).toFixed(0)}</div>
+                        <div class="text-sm text-slate-400 mt-1">上涨空间 +15%</div>
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <canvas id="detailChart" height="300"></canvas>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div class="p-3 bg-slate-800/50 rounded-lg">
+                        <div class="text-xs text-slate-500">市盈率(TTM)</div>
+                        <div class="text-lg font-semibold text-slate-200">${stock.pe}</div>
+                    </div>
+                    <div class="p-3 bg-slate-800/50 rounded-lg">
+                        <div class="text-xs text-slate-500">市净率</div>
+                        <div class="text-lg font-semibold text-slate-200">${stock.pb}</div>
+                    </div>
+                    <div class="p-3 bg-slate-800/50 rounded-lg">
+                        <div class="text-xs text-slate-500">ROE</div>
+                        <div class="text-lg font-semibold text-slate-200">18.5%</div>
+                    </div>
+                    <div class="p-3 bg-slate-800/50 rounded-lg">
+                        <div class="text-xs text-slate-500">股息率</div>
+                        <div class="text-lg font-semibold text-slate-200">1.2%</div>
+                    </div>
+                </div>
+                
+                <div class="flex space-x-4">
+                    <button class="flex-1 py-3 bg-blue-600 hover:bg-blue-700 rounded-xl font-semibold transition">
+                        <i class="fas fa-plus mr-2"></i>加入自选
+                    </button>
+                    <button class="flex-1 py-3 bg-slate-700 hover:bg-slate-600 rounded-xl font-semibold transition">
+                        <i class="fas fa-bell mr-2"></i>价格提醒
+                    </button>
+                </div>
+            `;
+            
+            modal.classList.remove('hidden');
+            
+            // Render detail chart
+            setTimeout(() => {
+                const ctx = document.getElementById('detailChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
+                        datasets: [{
+                            label: '股价走势',
+                            data: stock.trend,
+                            borderColor: '#60a5fa',
+                            backgroundColor: 'rgba(96, 165, 250, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: {
+                                grid: { color: 'rgba(148, 163, 184, 0.1)' },
+                                ticks: { color: '#94a3b8' }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: '#94a3b8' }
+                            }
+                        }
+                    }
+                });
+            }, 100);
+        }
+
+        function closeModal() {
+            document.getElementById('stockModal').classList.add('hidden');
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('sectorChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['科技', '新能源', '消费', '医药', '金融'],
+                    datasets: [{
+                        data: [35, 25, 20, 15, 5],
+                        backgroundColor: [
+                            'rgba(96, 165, 250, 0.8)',
+                            'rgba(52, 211, 153, 0.8)',
+                            'rgba(251, 191, 36, 0.8)',
+                            'rgba(167, 139, 250, 0.8)',
+                            'rgba(248, 113, 113, 0.8)'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: { color: '#94a3b8', font: { size: 11 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        function showNotification(message) {
+            const notif = document.createElement('div');
+            notif.className = 'fixed bottom-4 right-4 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-0 transition-all z-50 flex items-center';
+            notif.innerHTML = `<i class="fas fa-check-circle mr-2"></i>${message}`;
+            document.body.appendChild(notif);
+            setTimeout(() => {
+                notif.style.opacity = '0';
+                notTimeout(() => notif.remove(), 300);
+            }, 3000);
+        }
+
+        // Add CSS animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(20px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
