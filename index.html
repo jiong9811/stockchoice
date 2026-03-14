@@ -48,10 +48,10 @@
             animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
         
-        .ai-thinking {
+        .loading-skeleton {
             background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
             background-size: 200% 100%;
-            animation: loading 2s infinite;
+            animation: loading 1.5s infinite;
         }
         
         @keyframes loading {
@@ -88,12 +88,6 @@
             background: #334155;
             border-radius: 2px;
         }
-
-        .loading-skeleton {
-            background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
-            background-size: 200% 100%;
-            animation: loading 1.5s infinite;
-        }
     </style>
 </head>
 <body class="min-h-screen overflow-x-hidden">
@@ -116,7 +110,7 @@
                 </div>
                 <div class="flex items-center space-x-4">
                     <div class="text-xs text-slate-400" id="dataStatus">
-                        <i class="fas fa-circle text-green-500 mr-1"></i>数据实时
+                        <i class="fas fa-circle text-green-500 mr-1"></i>腾讯数据源
                     </div>
                     <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition glow-effect">
                         免费试用
@@ -133,7 +127,7 @@
         <div class="text-center mb-12 animate-fade-in">
             <div class="inline-flex items-center px-4 py-2 rounded-full bg-slate-800/50 border border-slate-700 mb-6">
                 <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse mr-2"></span>
-                <span class="text-sm text-slate-300" id="marketStatus">正在连接实时数据源...</span>
+                <span class="text-sm text-slate-300" id="marketStatus">已连接腾讯实时行情数据</span>
             </div>
             <h1 class="text-4xl md:text-6xl font-bold mb-4">
                 <span class="gradient-text">智能量化选股</span>
@@ -141,27 +135,8 @@
                 <span class="text-slate-100">让AI发现下一个机会</span>
             </h1>
             <p class="text-slate-400 text-lg max-w-2xl mx-auto mb-8">
-                基于深度学习算法，实时分析市场数据、财务指标和情绪信号，为您筛选出最具潜力的投资标的
+                基于腾讯实时行情数据，AI实时分析市场动态、计算技术指标，为您筛选出最具潜力的投资标的
             </p>
-        </div>
-
-        <!-- API Key Configuration -->
-        <div class="glass-panel rounded-2xl p-4 mb-6 border border-yellow-500/30 bg-yellow-500/5">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-3">
-                    <i class="fas fa-key text-yellow-400"></i>
-                    <div>
-                        <h3 class="text-sm font-semibold text-yellow-200">API密钥配置</h3>
-                        <p class="text-xs text-slate-400">使用麦蕊智数免费API，获取地址: https://www.mairui.club/getlicence.html</p>
-                    </div>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <input type="text" id="apiKey" placeholder="输入您的API密钥" class="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm w-64 focus:outline-none focus:border-yellow-500 text-slate-300">
-                    <button onclick="saveApiKey()" class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded-lg text-sm font-medium transition">
-                        保存
-                    </button>
-                </div>
-            </div>
         </div>
 
         <!-- AI Control Panel -->
@@ -232,7 +207,6 @@
                             <option value="zz500">中证500成分股</option>
                             <option value="cyb">创业板50</option>
                             <option value="kcb">科创板50</option>
-                            <option value="all">全市场</option>
                         </select>
                     </div>
                 </div>
@@ -244,7 +218,7 @@
                         <span>开始AI选股</span>
                     </button>
                     <p class="text-xs text-slate-500 text-center mt-3">
-                        <i class="fas fa-database mr-1"></i>数据源: 麦蕊智数实时行情
+                        <i class="fas fa-database mr-1"></i>数据源: 腾讯财经实时行情
                     </p>
                 </div>
             </div>
@@ -294,15 +268,15 @@
                         <i class="fas fa-bolt mr-2 text-yellow-400"></i>大盘指数
                     </h3>
                     <div class="space-y-3" id="indexList">
-                        <div class="flex justify-between items-center p-3 bg-slate-800/50 rounded-lg">
+                        <div class="flex justify-between items-center p-3 bg-slate-800/50 rounded-lg cursor-pointer hover:bg-slate-700/50 transition" onclick="fetchIndexData('sh000001')">
                             <span class="text-slate-300">上证指数</span>
                             <span class="font-mono font-bold" id="shIndex">--</span>
                         </div>
-                        <div class="flex justify-between items-center p-3 bg-slate-800/50 rounded-lg">
+                        <div class="flex justify-between items-center p-3 bg-slate-800/50 rounded-lg cursor-pointer hover:bg-slate-700/50 transition" onclick="fetchIndexData('sz399001')">
                             <span class="text-slate-300">深证成指</span>
                             <span class="font-mono font-bold" id="szIndex">--</span>
                         </div>
-                        <div class="flex justify-between items-center p-3 bg-slate-800/50 rounded-lg">
+                        <div class="flex justify-between items-center p-3 bg-slate-800/50 rounded-lg cursor-pointer hover:bg-slate-700/50 transition" onclick="fetchIndexData('sz399006')">
                             <span class="text-slate-300">创业板指</span>
                             <span class="font-mono font-bold" id="cyIndex">--</span>
                         </div>
@@ -338,95 +312,137 @@
     </div>
 
     <script>
-        // Configuration
-        let API_KEY = localStorage.getItem('stockApiKey') || '';
-        const API_BASE = 'http://api.mairui.club';
+        // 腾讯股票API - 无需密钥，直接使用
+        const TX_API = 'https://qt.gtimg.cn/q=';
         
-        // Stock pools (popular stocks for demo)
+        // 股票池配置
         const STOCK_POOLS = {
             hs300: [
-                {code: '000001', name: '平安银行', sector: '金融'},
-                {code: '000002', name: '万科A', sector: '地产'},
-                {code: '000063', name: '中兴通讯', sector: '科技'},
-                {code: '000100', name: 'TCL科技', sector: '科技'},
-                {code: '000333', name: '美的集团', sector: '消费'},
-                {code: '000568', name: '泸州老窖', sector: '消费'},
-                {code: '000651', name: '格力电器', sector: '消费'},
-                {code: '000725', name: '京东方A', sector: '科技'},
-                {code: '000768', name: '中航西飞', sector: '军工'},
-                {code: '000858', name: '五粮液', sector: '消费'},
-                {code: '002001', name: '新和成', sector: '医药'},
-                {code: '002007', name: '华兰生物', sector: '医药'},
-                {code: '002024', name: '苏宁易购', sector: '消费'},
-                {code: '002027', name: '分众传媒', sector: '传媒'},
-                {code: '002049', name: '紫光国微', sector: '科技'},
-                {code: '002120', name: '韵达股份', sector: '物流'},
-                {code: '002142', name: '宁波银行', sector: '金融'},
-                {code: '002230', name: '科大讯飞', sector: '科技'},
-                {code: '002271', name: '东方雨虹', sector: '建材'},
-                {code: '002304', name: '洋河股份', sector: '消费'}
-            ],
-            cyb: [
-                {code: '300750', name: '宁德时代', sector: '新能源'},
-                {code: '300760', name: '迈瑞医疗', sector: '医药'},
-                {code: '300014', name: '亿纬锂能', sector: '新能源'},
-                {code: '300015', name: '爱尔眼科', sector: '医药'},
-                {code: '300033', name: '同花顺', sector: '金融'},
-                {code: '300059', name: '东方财富', sector: '金融'},
-                {code: '300122', name: '智飞生物', sector: '医药'},
-                {code: '300124', name: '汇川技术', sector: '科技'},
-                {code: '300142', name: '沃森生物', sector: '医药'},
-                {code: '300274', name: '阳光电源', sector: '新能源'},
-                {code: '300408', name: '三环集团', sector: '科技'},
-                {code: '300413', name: '芒果超媒', sector: '传媒'},
-                {code: '300433', name: '蓝思科技', sector: '科技'},
-                {code: '300498', name: '温氏股份', sector: '农业'},
-                {code: '300529', name: '健帆生物', sector: '医药'}
+                {code: '000001', name: '平安银行', sector: '金融', fullCode: 'sz000001'},
+                {code: '000002', name: '万科A', sector: '地产', fullCode: 'sz000002'},
+                {code: '000063', name: '中兴通讯', sector: '科技', fullCode: 'sz000063'},
+                {code: '000100', name: 'TCL科技', sector: '科技', fullCode: 'sz000100'},
+                {code: '000333', name: '美的集团', sector: '消费', fullCode: 'sz000333'},
+                {code: '000568', name: '泸州老窖', sector: '消费', fullCode: 'sz000568'},
+                {code: '000651', name: '格力电器', sector: '消费', fullCode: 'sz000651'},
+                {code: '000725', name: '京东方A', sector: '科技', fullCode: 'sz000725'},
+                {code: '000858', name: '五粮液', sector: '消费', fullCode: 'sz000858'},
+                {code: '002001', name: '新和成', sector: '医药', fullCode: 'sz002001'},
+                {code: '002007', name: '华兰生物', sector: '医药', fullCode: 'sz002007'},
+                {code: '002049', name: '紫光国微', sector: '科技', fullCode: 'sz002049'},
+                {code: '002230', name: '科大讯飞', sector: '科技', fullCode: 'sz002230'},
+                {code: '002304', name: '洋河股份', sector: '消费', fullCode: 'sz002304'},
+                {code: '002594', name: '比亚迪', sector: '汽车', fullCode: 'sz002594'},
+                {code: '300014', name: '亿纬锂能', sector: '新能源', fullCode: 'sz300014'},
+                {code: '300015', name: '爱尔眼科', sector: '医药', fullCode: 'sz300015'},
+                {code: '300033', name: '同花顺', sector: '金融', fullCode: 'sz300033'},
+                {code: '300059', name: '东方财富', sector: '金融', fullCode: 'sz300059'},
+                {code: '300122', name: '智飞生物', sector: '医药', fullCode: 'sz300122'},
+                {code: '300124', name: '汇川技术', sector: '科技', fullCode: 'sz300124'},
+                {code: '300274', name: '阳光电源', sector: '新能源', fullCode: 'sz300274'},
+                {code: '300408', name: '三环集团', sector: '科技', fullCode: 'sz300408'},
+                {code: '300413', name: '芒果超媒', sector: '传媒', fullCode: 'sz300413'},
+                {code: '300433', name: '蓝思科技', sector: '科技', fullCode: 'sz300433'},
+                {code: '300498', name: '温氏股份', sector: '农业', fullCode: 'sz300498'},
+                {code: '300529', name: '健帆生物', sector: '医药', fullCode: 'sz300529'},
+                {code: '300750', name: '宁德时代', sector: '新能源', fullCode: 'sz300750'},
+                {code: '300760', name: '迈瑞医疗', sector: '医药', fullCode: 'sz300760'},
+                {code: '600000', name: '浦发银行', sector: '金融', fullCode: 'sh600000'},
+                {code: '600009', name: '上海机场', sector: '交通', fullCode: 'sh600009'},
+                {code: '600016', name: '民生银行', sector: '金融', fullCode: 'sh600016'},
+                {code: '600028', name: '中国石化', sector: '能源', fullCode: 'sh600028'},
+                {code: '600030', name: '中信证券', sector: '金融', fullCode: 'sh600030'},
+                {code: '600031', name: '三一重工', sector: '机械', fullCode: 'sh600031'},
+                {code: '600036', name: '招商银行', sector: '金融', fullCode: 'sh600036'},
+                {code: '600048', name: '保利发展', sector: '地产', fullCode: 'sh600048'},
+                {code: '600050', name: '中国联通', sector: '通信', fullCode: 'sh600050'},
+                {code: '600104', name: '上汽集团', sector: '汽车', fullCode: 'sh600104'},
+                {code: '600276', name: '恒瑞医药', sector: '医药', fullCode: 'sh600276'},
+                {code: '600309', name: '万华化学', sector: '化工', fullCode: 'sh600309'},
+                {code: '600519', name: '贵州茅台', sector: '消费', fullCode: 'sh600519'},
+                {code: '600585', name: '海螺水泥', sector: '建材', fullCode: 'sh600585'},
+                {code: '600588', name: '用友网络', sector: '科技', fullCode: 'sh600588'},
+                {code: '600690', name: '海尔智家', sector: '消费', fullCode: 'sh600690'},
+                {code: '600703', name: '三安光电', sector: '科技', fullCode: 'sh600703'},
+                {code: '600745', name: '闻泰科技', sector: '科技', fullCode: 'sh600745'},
+                {code: '600809', name: '山西汾酒', sector: '消费', fullCode: 'sh600809'},
+                {code: '600887', name: '伊利股份', sector: '消费', fullCode: 'sh600887'},
+                {code: '601012', name: '隆基绿能', sector: '新能源', fullCode: 'sh601012'},
+                {code: '601066', name: '中信建投', sector: '金融', fullCode: 'sh601066'},
+                {code: '601088', name: '中国神华', sector: '能源', fullCode: 'sh601088'},
+                {code: '601100', name: '恒立液压', sector: '机械', fullCode: 'sh601100'},
+                {code: '601138', name: '工业富联', sector: '科技', fullCode: 'sh601138'},
+                {code: '601166', name: '兴业银行', sector: '金融', fullCode: 'sh601166'},
+                {code: '601186', name: '中国铁建', sector: '建筑', fullCode: 'sh601186'},
+                {code: '601288', name: '农业银行', sector: '金融', fullCode: 'sh601288'},
+                {code: '601318', name: '中国平安', sector: '金融', fullCode: 'sh601318'},
+                {code: '601336', name: '新华保险', sector: '金融', fullCode: 'sh601336'},
+                {code: '601398', name: '工商银行', sector: '金融', fullCode: 'sh601398'},
+                {code: '601601', name: '中国太保', sector: '金融', fullCode: 'sh601601'},
+                {code: '601628', name: '中国人寿', sector: '金融', fullCode: 'sh601628'},
+                {code: '601668', name: '中国建筑', sector: '建筑', fullCode: 'sh601668'},
+                {code: '601688', name: '华泰证券', sector: '金融', fullCode: 'sh601688'},
+                {code: '601766', name: '中国中车', sector: '机械', fullCode: 'sh601766'},
+                {code: '601818', name: '光大银行', sector: '金融', fullCode: 'sh601818'},
+                {code: '601857', name: '中国石油', sector: '能源', fullCode: 'sh601857'},
+                {code: '601888', name: '中国中免', sector: '消费', fullCode: 'sh601888'},
+                {code: '601899', name: '紫金矿业', sector: '有色', fullCode: 'sh601899'},
+                {code: '601933', name: '永辉超市', sector: '消费', fullCode: 'sh601933'},
+                {code: '601988', name: '中国银行', sector: '金融', fullCode: 'sh601988'},
+                {code: '601989', name: '中国重工', sector: '军工', fullCode: 'sh601989'},
+                {code: '603288', name: '海天味业', sector: '消费', fullCode: 'sh603288'},
+                {code: '603501', name: '韦尔股份', sector: '科技', fullCode: 'sh603501'},
+                {code: '603986', name: '兆易创新', sector: '科技', fullCode: 'sh603986'},
+                {code: '603993', name: '洛阳钼业', sector: '有色', fullCode: 'sh603993'}
             ]
         };
 
         let currentStrategy = 'growth';
         let currentData = [];
-        let isRealTime = false;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
-            if(API_KEY) {
-                document.getElementById('apiKey').value = API_KEY;
-                isRealTime = true;
-                document.getElementById('marketStatus').textContent = '已连接实时数据源';
-            }
             initChart();
             loadMarketIndex();
         });
 
-        function saveApiKey() {
-            const key = document.getElementById('apiKey').value.trim();
-            if(key) {
-                localStorage.setItem('stockApiKey', key);
-                API_KEY = key;
-                isRealTime = true;
-                alert('API密钥已保存！现在可以获取实时数据了。');
-                document.getElementById('marketStatus').textContent = '已连接实时数据源';
-            }
-        }
-
+        // 腾讯API获取股票数据
         async function fetchStockData(stockCode) {
-            if(!isRealTime || !API_KEY) return null;
-            
             try {
-                // Using CORS proxy for GitHub Pages
+                // 使用CORS代理访问腾讯API
                 const proxyUrls = [
-                    `https://api.allorigins.win/get?url=${encodeURIComponent(`${API_BASE}/hsrl/ssjy/${stockCode}/${API_KEY}`)}`,
-                    `https://corsproxy.io/?${encodeURIComponent(`${API_BASE}/hsrl/ssjy/${stockCode}/${API_KEY}`)}`
+                    `https://api.allorigins.win/get?url=${encodeURIComponent(`${TX_API}${stockCode}`)}`,
+                    `https://corsproxy.io/?${encodeURIComponent(`${TX_API}${stockCode}`)}`
                 ];
                 
                 const response = await fetch(proxyUrls[0]);
                 const result = await response.json();
                 
                 if(result.contents) {
-                    const data = JSON.parse(result.contents);
-                    return data;
+                    // 解析腾讯API返回的数据
+                    // 格式: v_sz000001="1~平安银行~000001~10.50~0.15~1.45~..."
+                    const dataStr = result.contents;
+                    const match = dataStr.match(/v_[^=]+="([^"]+)"/);
+                    
+                    if(match) {
+                        const fields = match[1].split('~');
+                        return {
+                            name: fields[1],
+                            code: fields[2],
+                            price: parseFloat(fields[3]),
+                            change: parseFloat(fields[4]),
+                            changePercent: parseFloat(fields[5]),
+                            volume: parseFloat(fields[6]),
+                            turnover: parseFloat(fields[7]),
+                            marketCap: parseFloat(fields[45]) || 0, // 总市值
+                            pe: parseFloat(fields[52]) || 0, // 市盈率
+                            pb: parseFloat(fields[53]) || 0, // 市净率
+                            high: parseFloat(fields[33]),
+                            low: parseFloat(fields[34]),
+                            open: parseFloat(fields[5]),
+                            prevClose: parseFloat(fields[4])
+                        };
+                    }
                 }
                 return null;
             } catch(e) {
@@ -435,24 +451,22 @@
             }
         }
 
+        // 获取大盘指数
         async function loadMarketIndex() {
-            if(!isRealTime) return;
-            
-            // Simulate index data (would need specific API for indices)
             const indices = [
-                {id: 'shIndex', name: '000001'}, // 上证指数用平安银行代替演示
-                {id: 'szIndex', name: '000001'},
-                {id: 'cyIndex', name: '300750'}
+                {id: 'shIndex', code: 'sh000001'},
+                {id: 'szIndex', code: 'sz399001'},
+                {id: 'cyIndex', code: 'sz399006'}
             ];
             
             for(let idx of indices) {
-                const data = await fetchStockData(idx.name);
-                if(data && data.p) {
-                    const change = ((data.p - data.yc) / data.yc * 100).toFixed(2);
-                    const color = change >= 0 ? 'positive' : 'negative';
-                    const sign = change >= 0 ? '+' : '';
+                const data = await fetchStockData(idx.code);
+                if(data) {
+                    const changePercent = data.changePercent;
+                    const color = changePercent >= 0 ? 'positive' : 'negative';
+                    const sign = changePercent >= 0 ? '+' : '';
                     document.getElementById(idx.id).innerHTML = 
-                        `<span class="${color}">${data.p} (${sign}${change}%)</span>`;
+                        `<span class="${color}">${data.price.toFixed(2)} (${sign}${changePercent.toFixed(2)}%)</span>`;
                 }
             }
         }
@@ -488,41 +502,41 @@
             
             currentData = [];
             
-            // Fetch data for each stock
-            for(let i = 0; i < Math.min(stocks.length, 10); i++) {
+            // 获取前15只股票的实时数据
+            for(let i = 0; i < Math.min(stocks.length, 15); i++) {
                 const stock = stocks[i];
-                progressBar.style.width = `${(i + 1) / 10 * 100}%`;
+                progressBar.style.width = `${(i + 1) / 15 * 100}%`;
                 
-                if(isRealTime && API_KEY) {
-                    const realData = await fetchStockData(stock.code);
-                    if(realData) {
-                        const aiScore = calculateAIScore(realData, currentStrategy);
-                        if(aiScore >= threshold) {
-                            currentData.push({
-                                ...stock,
-                                price: parseFloat(realData.p),
-                                change: parseFloat(realData.pc),
-                                marketCap: (parseFloat(realData.sz) / 100000000).toFixed(0) + '亿',
-                                pe: realData.pe,
-                                pb: realData.sjl,
-                                volume: realData.v,
-                                turnover: realData.hs,
-                                score: aiScore,
-                                aiTag: getAITag(aiScore),
-                                trend: generateTrend(realData),
-                                realData: realData
-                            });
-                        }
+                const realData = await fetchStockData(stock.fullCode);
+                
+                if(realData && realData.price > 0) {
+                    const aiScore = calculateAIScore(realData, currentStrategy);
+                    if(aiScore >= threshold) {
+                        currentData.push({
+                            ...stock,
+                            price: realData.price,
+                            change: realData.changePercent,
+                            marketCap: (realData.marketCap / 100000000).toFixed(0) + '亿',
+                            pe: realData.pe.toFixed(1),
+                            pb: realData.pb.toFixed(1),
+                            volume: realData.volume,
+                            turnover: realData.turnover,
+                            score: aiScore,
+                            aiTag: getAITag(aiScore),
+                            trend: generateTrend(realData),
+                            realData: realData,
+                            isReal: true
+                        });
                     }
                 } else {
-                    // Fallback to mock data if no API
-                    await new Promise(r => setTimeout(r, 200));
+                    // 使用模拟数据作为fallback
+                    await new Promise(r => setTimeout(r, 100));
                     const mockScore = Math.floor(Math.random() * 20) + 80;
                     if(mockScore >= threshold) {
                         currentData.push({
                             ...stock,
                             price: (Math.random() * 100 + 10).toFixed(2),
-                            change: (Math.random() * 10 - 3).toFixed(2),
+                            change: (Math.random() * 6 - 2).toFixed(2),
                             marketCap: (Math.random() * 5000 + 100).toFixed(0) + '亿',
                             pe: (Math.random() * 30 + 5).toFixed(1),
                             pb: (Math.random() * 5 + 1).toFixed(1),
@@ -531,7 +545,7 @@
                             score: mockScore,
                             aiTag: getAITag(mockScore),
                             trend: Array(6).fill(0).map(() => Math.random() * 100),
-                            isMock: true
+                            isReal: false
                         });
                     }
                 }
@@ -553,32 +567,27 @@
         }
 
         function calculateAIScore(data, strategy) {
-            let score = 70; // Base score
-            
-            // Technical factors
-            const change = parseFloat(data.pc);
-            const turnover = parseFloat(data.hs);
-            const pe = parseFloat(data.pe);
+            let score = 70;
+            const change = data.changePercent;
+            const pe = data.pe;
+            const pb = data.pb;
             
             if(strategy === 'growth') {
                 if(change > 3) score += 10;
                 if(change > 5) score += 5;
-                if(turnover > 3) score += 5;
                 if(pe > 0 && pe < 50) score += 5;
+                if(data.volume > 100000) score += 5;
             } else if(strategy === 'value') {
                 if(pe > 0 && pe < 20) score += 15;
-                if(parseFloat(data.sjl) < 2) score += 10;
+                if(pb > 0 && pb < 2) score += 10;
                 if(change > 0 && change < 3) score += 5;
             } else if(strategy === 'momentum') {
                 if(change > 2) score += 10;
-                if(turnover > 5) score += 10;
-                if(parseFloat(data.zf) > 5) score += 5;
+                if(data.volume > 500000) score += 10;
+                if(change > 5) score += 5;
             }
             
-            // Risk adjustment
-            if(pe < 0) score -= 10; // Loss making company
-            if(turnover > 20) score -= 5; // Too speculative
-            
+            if(pe < 0) score -= 10;
             return Math.min(98, Math.max(60, score));
         }
 
@@ -590,8 +599,7 @@
         }
 
         function generateTrend(data) {
-            // Generate trend from price data
-            const base = parseFloat(data.p) || 50;
+            const base = data.price || 50;
             return Array(6).fill(0).map((_, i) => base * (1 + (Math.random() - 0.5) * 0.1));
         }
 
@@ -603,18 +611,17 @@
                     <div class="glass-panel rounded-2xl p-12 text-center">
                         <i class="fas fa-search text-4xl text-slate-600 mb-4"></i>
                         <p class="text-slate-400">未找到符合条件的股票，请调整筛选条件</p>
-                        ${!isRealTime ? '<p class="text-yellow-500 mt-2 text-sm">提示：配置API密钥后可获取实时数据</p>' : ''}
                     </div>
                 `;
                 return;
             }
             
             container.innerHTML = currentData.map((stock, index) => `
-                <div class="stock-card glass-panel rounded-xl p-6 cursor-pointer ${stock.isMock ? 'border-l-4 border-yellow-500/50' : 'border-l-4 border-green-500/50'}" 
+                <div class="stock-card glass-panel rounded-xl p-6 cursor-pointer ${stock.isReal ? 'border-l-4 border-green-500/50' : 'border-l-4 border-yellow-500/50'}" 
                      onclick="showStockDetail(${index})" 
                      style="animation: fadeIn 0.5s ease-out ${index * 0.1}s both;">
                     
-                    ${stock.isMock ? '<div class="absolute top-2 right-2 text-xs text-yellow-500/70"><i class="fas fa-database mr-1"></i>模拟数据</div>' : ''}
+                    ${!stock.isReal ? '<div class="absolute top-2 right-2 text-xs text-yellow-500/70"><i class="fas fa-database mr-1"></i>模拟</div>' : ''}
                     
                     <div class="flex items-center justify-between mb-4">
                         <div class="flex items-center space-x-4">
@@ -687,20 +694,19 @@
         function updateInsights() {
             const insights = document.getElementById('aiInsights');
             const avgScore = currentData.reduce((a, b) => a + b.score, 0) / currentData.length;
-            const topSector = currentData.filter(s => s.sector === '科技').length > 3 ? '科技' : 
-                             currentData.filter(s => s.sector === '新能源').length > 2 ? '新能源' : '多行业';
+            const realCount = currentData.filter(s => s.isReal).length;
             
             insights.innerHTML = `
                 <div class="p-3 bg-slate-800/50 rounded-lg border-l-2 border-blue-500">
-                    <p class="text-sm text-slate-300">本次筛选平均AI评分: <span class="text-blue-400 font-bold">${avgScore.toFixed(1)}</span>，${topSector}板块表现突出</p>
-                    <span class="text-xs text-slate-500 mt-1 block">刚刚更新</span>
+                    <p class="text-sm text-slate-300">本次筛选平均AI评分: <span class="text-blue-400 font-bold">${avgScore.toFixed(1)}</span></p>
+                    <span class="text-xs text-slate-500 mt-1 block">${realCount}只实时数据，${currentData.length - realCount}只模拟数据</span>
                 </div>
                 <div class="p-3 bg-slate-800/50 rounded-lg border-l-2 border-green-500">
-                    <p class="text-sm text-slate-300">检测到${currentData.filter(s => s.change > 3).length}只股票涨幅超过3%，市场情绪积极</p>
+                    <p class="text-sm text-slate-300">检测到${currentData.filter(s => s.change > 3).length}只股票涨幅超过3%</p>
                     <span class="text-xs text-slate-500 mt-1 block">实时计算</span>
                 </div>
                 <div class="p-3 bg-slate-800/50 rounded-lg border-l-2 border-purple-500">
-                    <p class="text-sm text-slate-300">建议关注低估值高成长标的，当前${currentStrategy === 'value' ? '价值' : '成长'}策略占优</p>
+                    <p class="text-sm text-slate-300">建议关注${currentStrategy === 'value' ? '低估值' : '高成长'}标的</p>
                     <span class="text-xs text-slate-500 mt-1 block">AI建议</span>
                 </div>
             `;
@@ -717,7 +723,7 @@
                 <div class="flex justify-between items-start mb-6">
                     <div>
                         <h2 class="text-3xl font-bold text-slate-100 mb-1">${stock.name}</h2>
-                        <p class="text-slate-400">${stock.code} | ${stock.sector} ${stock.isMock ? '<span class="text-yellow-500 text-xs">(模拟数据)</span>' : '<span class="text-green-500 text-xs">(实时数据)</span>'}</p>
+                        <p class="text-slate-400">${stock.code} | ${stock.sector} ${stock.isReal ? '<span class="text-green-500 text-xs">(实时数据)</span>' : '<span class="text-yellow-500 text-xs">(模拟数据)</span>'}</p>
                     </div>
                     <button onclick="closeModal()" class="text-slate-400 hover:text-white transition">
                         <i class="fas fa-times text-2xl"></i>
